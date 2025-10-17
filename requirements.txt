@@ -1,0 +1,9 @@
+pyspark==3.4.1
+apache-flink==1.17.1
+kafka-python==2.0.2
+boto3==1.28.44
+python-schema-registry-client==2.4.1
+confluent-kafka==2.2.0
+fastapi==0.103.1
+uvicorn==0.23.2
+python-dotenv==1.0.0
