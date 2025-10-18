@@ -22,7 +22,7 @@ def create_example_config() -> StreamConfig:
     return StreamConfig(
         kafka=kafka_config,
         aws=aws_config,
-        checkpoint_location="/tmp/checkpoint"
+        checkpoint_location="data/spark/checkpoint"
     )
 
 def run_spark_example():
@@ -40,13 +40,17 @@ def run_spark_example():
     ])
     
     # Read from Kafka
+    print("Reading stream from Kafka...")
     stream_df = connector.read_stream(schema)
     
     # Process the stream (example: filter values > 30)
+    print("Processing stream...")
     processed_df = stream_df.filter(stream_df.value > 30)
     
     # Write to console for testing
-    query = connector.write_stream_console(processed_df)
+    print("Writing stream to console...")
+    # query = connector.write_stream_console(processed_df)
+    query = connector.write_stream(processed_df, "data/spark/csv")
     
     try:
         query.awaitTermination()

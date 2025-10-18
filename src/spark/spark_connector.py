@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.streaming import StreamingQuery
+from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType
 from typing import Optional
 from ..common.config import StreamConfig
@@ -14,7 +15,8 @@ class SparkStreamingConnector:
             .appName("AWS-Spark-Streaming") \
             .config("spark.streaming.stopGracefullyOnShutdown", "true") \
             .config("spark.sql.streaming.schemaInference", "true") \
-            .getOrCreate()
+            .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.1") \
+            .getOrCreate()    
 
         # Set AWS credentials if provided
         if self.config.aws.access_key_id and self.config.aws.secret_access_key:
@@ -38,17 +40,17 @@ class SparkStreamingConnector:
             .load()
 
         if schema:
-            return stream.selectExpr("CAST(value AS STRING) as json") \
-                .select("from_json(json, schema) as data") \
-                .select("data.*")
-        return stream
+            json_df = stream.selectExpr("CAST(value AS STRING) as json")
+            parsed_df = json_df.withColumn("data", from_json(col("json"), schema)).select("data.*")
+
+        return parsed_df
 
     def write_stream(self, df, output_path: str) -> StreamingQuery:
         """
         Write streaming DataFrame to S3
         """
         return df.writeStream \
-            .format("parquet") \
+            .format("csv") \
             .option("path", output_path) \
             .option("checkpointLocation", self.config.checkpoint_location) \
             .outputMode("append") \
